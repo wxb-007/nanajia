@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商家记录管理系统</title>
+  <!-- 引入Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <!-- 配置Tailwind主题 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3b82f6',
+            secondary: '#6366f1',
+            accent: '#10b981',
+            neutral: '#64748b',
+            'neutral-light': '#f1f5f9',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  
+  <!-- 自定义工具类 -->
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .transition-height {
+        transition: max-height 0.3s ease-in-out;
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .form-focus {
+        @apply focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800 min-h-screen flex flex-col">
+  <!-- 顶部导航栏 -->
+  <header class="bg-white shadow-md sticky top-0 z-50 transition-all duration-300">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-database text-primary text-2xl"></i>
+        <h1 class="text-xl md:text-2xl font-bold text-gray-800">商家记录管理系统</h1>
+      </div>
+      
+      <div class="flex items-center space-x-4">
+        <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+          <i class="fa fa-moon-o text-gray-600"></i>
+        </button>
+        <button id="help-btn" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+          <i class="fa fa-question-circle text-gray-600"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="flex-grow container mx-auto px-4 py-6">
+    <!-- 控制面板 -->
+    <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div class="flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center space-x-2">
+          <button id="add-record-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all shadow-md hover:shadow-lg">
+            <i class="fa fa-plus"></i>
+            <span>添加记录</span>
+          </button>
+          <button id="customize-fields-btn" class="bg-secondary hover:bg-secondary/90 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all shadow-md hover:shadow-lg">
+            <i class="fa fa-cog"></i>
+            <span>自定义字段</span>
+          </button>
+        </div>
+        
+        <div class="relative w-full md:w-auto">
+          <input 
+            id="global-search" 
+            type="text" 
+            placeholder="全局搜索..." 
+            class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg form-focus w-full md:w-64"
+          >
+          <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 表单区域 (默认隐藏) -->
+    <div id="record-form-container" class="bg-white rounded-lg shadow-md p-6 mb-6 hidden transform transition-all duration-300">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-gray-800">添加新记录</h2>
+        <button id="close-form-btn" class="text-gray-500 hover:text-gray-700 transition-colors">
+          <i class="fa fa-times text-xl"></i>
+        </button>
+      </div>
+      
+      <form id="record-form" class="space-y-4">
+        <!-- 表单字段将通过JavaScript动态生成 -->
+        <div id="form-fields-container" class="space-y-4">
+          <!-- 初始默认字段 -->
+          <div class="form-group">
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="name">名称 *</label>
+            <input type="text" id="name" name="name" required 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg form-focus">
+          </div>
+          
+          <div class="form-group">
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="date">日期 *</label>
+            <input type="date" id="date" name="date" required 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg form-focus">
+          </div>
+          
+          <div class="form-group">
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="amount">金额</label>
+            <input type="number" id="amount" name="amount" step="0.01" min="0" 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg form-focus">
+          </div>
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-2">
+          <button type="button" id="cancel-form-btn" 
+                  class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
+            取消
+          </button>
+          <button type="submit" 
+                  class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors shadow hover:shadow-md">
+            保存记录
+          </button>
+        </div>
+      </form>
+    </div>
+    
+    <!-- 自定义字段模态框 (默认隐藏) -->
+    <div id="custom-fields-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform transition-all">
+        <div class="p-6 border-b border-gray-200">
+          <div class="flex justify-between items-center">
+            <h2 class="text-xl font-bold text-gray-800">自定义字段</h2>
+            <button id="close-fields-modal" class="text-gray-500 hover:text-gray-700 transition-colors">
+              <i class="fa fa-times text-xl"></i>
+            </button>
+          </div>
+          <p class="text-gray-500 mt-1">添加、编辑或删除您需要的字段</p>
+        </div>
+        
+        <div class="p-6">
+          <form id="fields-form" class="space-y-6">
+            <div id="custom-fields-container" class="space-y-4">
+              <!-- 自定义字段将在这里动态生成 -->
+              <div class="custom-field-item p-4 border border-gray-200 rounded-lg flex flex-wrap gap-4 items-center">
+                <div class="flex-grow min-w-[150px]">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">字段名称 *</label>
+                  <input type="text" name="field-name[]" required 
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg form-focus">
+                </div>
+                
+                <div class="w-full sm:w-auto sm:flex-grow sm:min-w-[150px]">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">字段类型 *</label>
+                  <select name="field-type[]" required 
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg form-focus">
+                    <option value="text">文本</option>
+                    <option value="number">数字</option>
+                    <option value="date">日期</option>
+                    <option value="select">下拉选择</option>
+                    <option value="checkbox">复选框</option>
+                  </select>
+                </div>
+                
+                <div class="field-options w-full hidden">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">选项 (每行一个)</label>
+                  <textarea name="field-options[]" rows="2" 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg form-focus"
+                            placeholder="选项1&#10;选项2&#10;选项3"></textarea>
+                </div>
+                
+                <div class="flex items-center self-start">
+                  <button type="button" class="remove-field-btn text-red-500 hover:text-red-700 p-2 transition-colors">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <button type="button" id="add-field-btn" 
+                    class="w-full py-2 border border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2">
+              <i class="fa fa-plus"></i>
+              <span>添加新字段</span>
+            </button>
+          </form>
+        </div>
+        
+        <div class="p-6 border-t border-gray-200 flex justify-end space-x-3">
+          <button id="cancel-fields-btn" 
+                  class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
+            取消
+          </button>
+          <button id="save-fields-btn" 
+                  class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow hover:shadow-md">
+            保存字段设置
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 筛选和表格区域 -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+      <!-- 筛选区域 -->
+      <div id="filters-container" class="p-4 border-b border-gray-200 bg-gray-50">
+        <div class="flex flex-wrap gap-4">
+          <div class="filter-group">
+            <label class="block text-sm font-medium text-gray-700 mb-1">日期范围</label>
+            <div class="flex space-x-2">
+              <input type="date" id="filter-date-from" class="px-3 py-2 border border-gray-300 rounded-lg form-focus">
+              <span class="self-center text-gray-500">至</span>
+              <input type="date" id="filter-date-to" class="px-3 py-2 border border-gray-300 rounded-lg form-focus">
+            </div>
+          </div>
+          
+          <div id="dynamic-filters-container" class="flex flex-wrap gap-4">
+            <!-- 动态筛选条件将在这里生成 -->
+          </div>
+          
+          <div class="self-end">
+            <button id="apply-filters-btn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow hover:shadow-md">
+              应用筛选
+            </button>
+            <button id="reset-filters-btn" class="ml-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
+              重置
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 表格区域 -->
+      <div class="overflow-x-auto">
+        <table class="w-full table-auto">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-200">
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">名称</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">日期</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">金额</th>
+              <!-- 动态表头将在这里添加 -->
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+            </tr>
+          </thead>
+          <tbody id="records-table-body" class="divide-y divide-gray-200">
+            <!-- 表格数据将通过JavaScript动态生成 -->
+            <!-- 初始示例数据 -->
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">张三</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-500">2023-05-15</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-500">¥120.50</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button class="text-primary hover:text-primary/80 mr-3 edit-record">编辑</button>
+                <button class="text-red-500 hover:text-red-600 delete-record">删除</button>
+              </td>
+            </tr>
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">李四</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-500">2023-05-16</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-500">¥85.00</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button class="text-primary hover:text-primary/80 mr-3 edit-record">编辑</button>
+                <button class="text-red-500 hover:text-red-600 delete-record">删除</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- 分页和统计信息 -->
+      <div class="px-6 py-4 border-t border-gray-200 flex flex-wrap justify-between items-center gap-4">
+        <div class="text-sm text-gray-500">
+          显示 <span id="showing-range">1-2</span> 条，共 <span id="total-records">2</span> 条记录
+        </div>
+        
+        <div class="flex items-center space-x-2">
+          <button id="prev-page" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            <i class="fa fa-chevron-left"></i>
+          </button>
+          <span id="current-page" class="px-3 py-1">1</span>
+          <button id="next-page" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 transition-colors" disabled>
+            <i class="fa fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <!-- 页脚 -->
+  <footer class="bg-white border-t border-gray-200 py-4 mt-6">
+    <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+      <p>© 2023 商家记录管理系统 - 为您的业务提供高效的数据管理解决方案</p>
+    </div>
+  </footer>
+  
+  <!-- 确认删除模态框 -->
+  <div id="delete-confirmation-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 transform transition-all">
+      <div class="text-center mb-4">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
+          <i class="fa fa-exclamation-triangle text-2xl text-red-500"></i>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900">确认删除</h3>
+        <p class="text-gray-500 mt-2">您确定要删除这条记录吗？此操作无法撤销。</p>
+      </div>
+      
+      <div class="flex justify-center space-x-3 mt-6">
+        <button id="cancel-delete-btn" 
+                class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
+          取消
+        </button>
+        <button id="confirm-delete-btn" 
+                class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors shadow hover:shadow-md">
+          确认删除
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 帮助模态框 -->
+  <div id="help-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 transform transition-all">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-gray-800">使用帮助</h2>
+        <button id="close-help-btn" class="text-gray-500 hover:text-gray-700 transition-colors">
+          <i class="fa fa-times text-xl"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <h3 class="font-medium text-gray-900">添加记录</h3>
+          <p class="text-gray-600 mt-1">点击"添加记录"按钮，填写表单并保存即可添加新记录到系统中。</p>
+        </div>
+        
+        <div>
+          <h3 class="font-medium text-gray-900">自定义字段</h3>
+          <p class="text-gray-600 mt-1">点击"自定义字段"按钮，可以添加、编辑或删除您需要的字段，以适应不同的业务需求。</p>
+        </div>
+        
+        <div>
+          <h3 class="font-medium text-gray-900">筛选记录</h3>
+          <p class="text-gray-600 mt-1">使用页面上的筛选条件，可以快速查找您需要的记录。设置好条件后点击"应用筛选"即可。</p>
+        </div>
+        
+        <div>
+          <h3 class="font-medium text-gray-900">编辑和删除</h3>
+          <p class="text-gray-600 mt-1">每条记录后面都有"编辑"和"删除"按钮，点击可以对记录进行相应操作。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 全局变量
+    let records = [
+      { id: 1, name: '张三', date: '2023-05-15', amount: 120.50 },
+      { id: 2, name: '李四', date: '2023-05-16', amount: 85.00 }
+    ];
+    let customFields = [];
+    let currentPage = 1;
+    const recordsPerPage = 10;
+    let editingRecordId = null;
+    let recordToDeleteId = null;
+    let filters = {};
+    
+    // DOM 加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      // 从本地存储加载数据
+      loadFromLocalStorage();
+      
+      // 初始化事件监听
+      initEventListeners();
+      
+      // 渲染表格
+      renderRecordsTable();
+      
+      // 设置今天的日期为默认日期
+      document.getElementById('date').valueAsDate = new Date();
+      
+      // 为自定义字段容器添加事件委托，解决动态添加元素的事件绑定问题
+      document.getElementById('custom-fields-container').addEventListener('click', function(e) {
+        if (e.target.closest('.remove-field-btn')) {
+          const fieldItem = e.target.closest('.custom-field-item');
+          const container = document.getElementById('custom-fields-container');
+          
+          // 确保至少保留一个字段
+          if (container.children.length > 1) {
+            fieldItem.remove();
+          } else {
+            showNotification('至少需要保留一个字段', 'error');
+          }
+        }
+      });
+    });
+    
+    // 初始化事件监听
+    function initEventListeners() {
+      // 添加记录按钮
+      document.getElementById('add-record-btn').addEventListener('click', function() {
+        editingRecordId = null;
+        resetForm();
+        document.getElementById('record-form-container').classList.remove('hidden');
+        document.getElementById('record-form-container').classList.add('block');
+        // 平滑滚动到表单
+        document.getElementById('record-form-container').scrollIntoView({ behavior: 'smooth' });
+      });
+      
+      // 关闭表单按钮
+      document.getElementById('close-form-btn').addEventListener('click', hideForm);
+      document.getElementById('cancel-form-btn').addEventListener('click', hideForm);
+      
+      // 表单提交
+      document.getElementById('record-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveRecord();
+      });
+      
+      // 自定义字段按钮
+      document.getElementById('customize-fields-btn').addEventListener('click', function() {
+        populateCustomFieldsForm();
+        document.getElementById('custom-fields-modal').classList.remove('hidden');
+      });
+      
+      // 关闭自定义字段模态框
+      document.getElementById('close-fields-modal').addEventListener('click', hideCustomFieldsModal);
+      document.getElementById('cancel-fields-btn').addEventListener('click', hideCustomFieldsModal);
+      
+      // 保存自定义字段
+      document.getElementById('save-fields-btn').addEventListener('click', saveCustomFields);
+      
+      // 添加新字段
+      document.getElementById('add-field-btn').addEventListener('click', addNewCustomField);
+      
+      // 应用筛选
+      document.getElementById('apply-filters-btn').addEventListener('click', applyFilters);
+      
+      // 重置筛选
+      document.getElementById('reset-filters-btn').addEventListener('click', resetFilters);
+      
+      // 全局搜索
+      document.getElementById('global-search').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        filterRecords(searchTerm);
+      });
+      
+      // 分页按钮
+      document.getElementById('prev-page').addEventListener('click', goToPreviousPage);
+      document.getElementById('next-page').addEventListener('click', goToNextPage);
+      
+      // 关闭删除确认
+      document.getElementById('cancel-delete-btn').addEventListener('click', hideDeleteConfirmation);
+      
+      // 确认删除
+      document.getElementById('confirm-delete-btn').addEventListener('click', confirmDelete);
+      
+      // 帮助按钮
+      document.getElementById('help-btn').addEventListener('click', function() {
+        document.getElementById('help-modal').classList.remove('hidden');
+      });
+      
+      // 关闭帮助
+      document.getElementById('close-help-btn').addEventListener('click', function() {
+        document.getElementById('help-modal').classList.add('hidden');
+      });
+      
+      // 主题切换
+      document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    }
+    
+    // 渲染记录表格
+    function renderRecordsTable() {
+      const tableBody = document.getElementById('records-table-body');
+      tableBody.innerHTML = '';
+      
+      // 应用筛选
+      let filteredRecords = applyFiltersToRecords();
+      
+      // 分页
+      const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
+      const startIndex = (currentPage - 1) * recordsPerPage;
+      const endIndex = startIndex + recordsPerPage;
+      const recordsToShow = filteredRecords.slice(startIndex, endIndex);
+      
+      // 更新分页信息
+      updatePaginationInfo(filteredRecords.length, totalPages);
+      
+      if (recordsToShow.length === 0) {
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = `
+          <td colspan="${3 + customFields.length}" class="px-6 py-10 text-center text-gray-500">
+            没有找到匹配的记录
+          </td>
+        `;
+        tableBody.appendChild(emptyRow);
+        return;
+      }
+      
+      // 添加记录行
+      recordsToShow.forEach(record => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50 transition-colors';
+        
+        let rowHtml = `
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">${escapeHtml(record.name)}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-500">${escapeHtml(record.date)}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-500">¥${record.amount ? parseFloat(record.amount).toFixed(2) : '0.00'}</div>
+          </td>
+        `;
+        
+        // 添加自定义字段
+        customFields.forEach(field => {
+          rowHtml += `
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-500">${escapeHtml(record[field.name] || '')}</div>
+            </td>
+          `;
+        });
+        
+        // 添加操作按钮
+        rowHtml += `
+          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <button class="text-primary hover:text-primary/80 mr-3 edit-record" data-id="${record.id}">编辑</button>
+            <button class="text-red-500 hover:text-red-600 delete-record" data-id="${record.id}">删除</button>
+          </td>
+        `;
+        
+        row.innerHTML = rowHtml;
+        tableBody.appendChild(row);
+      });
+      
+      // 添加编辑和删除事件监听
+      document.querySelectorAll('.edit-record').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const recordId = parseInt(this.getAttribute('data-id'));
+          editRecord(recordId);
+        });
+      });
+      
+      document.querySelectorAll('.delete-record').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const recordId = parseInt(this.getAttribute('data-id'));
+          showDeleteConfirmation(recordId);
+        });
+      });
+      
+      // 更新表头
+      updateTableHeaders();
+      
+      // 更新筛选条件
+      updateDynamicFilters();
+    }
+    
+    // 更新表头
+    function updateTableHeaders() {
+      const thead = document.querySelector('thead tr');
+      
+      // 清除现有自定义表头
+      const existingCustomHeaders = thead.querySelectorAll('th[data-custom="true"]');
+      existingCustomHeaders.forEach(header => header.remove());
+      
+      // 添加自定义字段表头
+      customFields.forEach(field => {
+        const th = document.createElement('th');
+        th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
+        th.textContent = field.name;
+        th.setAttribute('data-custom', 'true');
+        // 插入到操作列之前
+        thead.insertBefore(th, thead.lastElementChild);
+      });
+    }
+    
+    // 重置表单
+    function resetForm() {
+      const form = document.getElementById('record-form');
+      form.reset();
+      document.getElementById('date').valueAsDate = new Date();
+      
+      // 清除现有自定义字段表单元素
+      const customFormFields = document.querySelectorAll('.custom-form-field');
+      customFormFields.forEach(field => field.remove());
+      
+      // 添加自定义字段到表单
+      addCustomFieldsToForm();
+    }
+    
+    // 添加自定义字段到表单
+    function addCustomFieldsToForm() {
+      const container = document.getElementById('form-fields-container');
+      
+      customFields.forEach(field => {
+        const fieldGroup = document.createElement('div');
+        fieldGroup.className = 'form-group custom-form-field';
+        
+        let fieldHtml = `
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="${field.name}">${field.name}</label>
+        `;
+        
+        switch(field.type) {
+          case 'text':
+            fieldHtml += `
+              <input type="text" id="${field.name}" name="${field.name}" 
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg form-focus">
+            `;
+            break;
+          case 'number':
+            fieldHtml += `
+              <input type="number" id="${field.name}" name="${field.name}" step="0.01" 
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg form-focus">
+            `;
+            break;
+          case 'date':
+            fieldHtml += `
+              <input type="date" id="${field.name}" name="${field.name}" 
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg form-focus">
+            `;
+            break;
+          case 'select':
+            fieldHtml += `<select id="${field.name}" name="${field.name}" 
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg form-focus">
+              <option value="">请选择</option>
+            `;
+            
+            if (field.options && field.options.length) {
+              field.options.forEach(option => {
+                fieldHtml += `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`;
+              });
+            }
+            
+            fieldHtml += `</select>`;
+            break;
+          case 'checkbox':
+            fieldHtml += `
+              <div class="flex items-center">
+                <input type="checkbox" id="${field.name}" name="${field.name}" 
+                      class="w-4 h-4 text-primary border-gray-300 rounded form-focus">
+                <label for="${field.name}" class="ml-2 text-sm text-gray-700">是</label>
+              </div>
+            `;
+            break;
+        }
+        
+        fieldGroup.innerHTML = fieldHtml;
+        container.appendChild(fieldGroup);
+      });
+    }
+    
+    // 保存记录
+    function saveRecord() {
+      const formData = new FormData(document.getElementById('record-form'));
+      const recordData = {};
+      
+      formData.forEach((value, key) => {
+        if (key === 'amount') {
+          recordData[key] = parseFloat(value) || 0;
+        } else if (key === 'checkbox') {
+          recordData[key] = value === 'on';
+        } else {
+          recordData[key] = value;
+        }
+      });
+      
+      if (editingRecordId) {
+        // 更新现有记录
+        const index = records.findIndex(record => record.id === editingRecordId);
+        if (index !== -1) {
+          records[index] = { ...records[index], ...recordData };
+        }
+      } else {
+        // 创建新记录
+        const newId = records.length > 0 ? Math.max(...records.map(r => r.id)) + 1 : 1;
+        records.push({ id: newId, ...recordData });
+      }
+      
+      // 保存到本地存储
+      saveToLocalStorage();
+      
+      // 刷新表格
+      renderRecordsTable();
+      
+      // 隐藏表单
+      hideForm();
+      
+      // 显示成功消息
+      showNotification(editingRecordId ? '记录已更新' : '记录已添加', 'success');
+    }
+    
+    // 编辑记录
+    function editRecord(id) {
+      const record = records.find(r => r.id === id);
+      if (!record) return;
+      
+      editingRecordId = id;
+      resetForm();
+      
+      // 填充表单数据
+      Object.keys(record).forEach(key => {
+        const input = document.getElementById(key);
+        if (input) {
+          if (input.type === 'checkbox') {
+            input.checked = record[key];
+          } else {
+            input.value = record[key];
+          }
+        }
+      });
+      
+      // 显示表单
+      document.getElementById('record-form-container').classList.remove('hidden');
+      document.getElementById('record-form-container').classList.add('block');
+      // 平滑滚动到表单
+      document.getElementById('record-form-container').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // 显示删除确认
+    function showDeleteConfirmation(id) {
+      recordToDeleteId = id;
+      document.getElementById('delete-confirmation-modal').classList.remove('hidden');
+    }
+    
+    // 隐藏删除确认
+    function hideDeleteConfirmation() {
+      recordToDeleteId = null;
+      document.getElementById('delete-confirmation-modal').classList.add('hidden');
+    }
+    
+    // 确认删除
+    function confirmDelete() {
+      if (recordToDeleteId) {
+        records = records.filter(record => record.id !== recordToDeleteId);
+        
+        // 保存到本地存储
+        saveToLocalStorage();
+        
+        // 刷新表格
+        renderRecordsTable();
+        
+        // 隐藏模态框
+        hideDeleteConfirmation();
+        
+        // 显示成功消息
+        showNotification('记录已删除', 'success');
+      }
+    }
+    
+    // 隐藏表单
+    function hideForm() {
+      document.getElementById('record-form-container').classList.add('hidden');
+      document.getElementById('record-form-container').classList.remove('block');
+      editingRecordId = null;
+    }
+    
+    // 填充自定义字段表单
+    function populateCustomFieldsForm() {
+      const container = document.getElementById('custom-fields-container');
+      container.innerHTML = '';
+      
+      if (customFields.length === 0) {
+        // 添加一个空字段
+        addNewCustomField(true);
+      } else {
+        // 填充现有字段
+        customFields.forEach(field => {
+          addNewCustomField(true, field);
+        });
+      }
+      
+      // 添加字段类型切换事件
+      setupFieldTypeChangeListeners();
+    }
+    
+    // 添加新的自定义字段
+    function addNewCustomField(skipSetup = false, fieldData = null) {
+      const container = document.getElementById('custom-fields-container');
+      
+      const fieldItem = document.createElement('div');
+      fieldItem.className = 'custom-field-item p-4 border border-gray-200 rounded-lg flex flex-wrap gap-4 items-center';
+      
+      let optionsHtml = '';
+      if (fieldData && fieldData.options && fieldData.options.length) {
+        optionsHtml = fieldData.options.join('\n');
+      }
+      
+      fieldItem.innerHTML = `
+        <div class="flex-grow min-w-[150px]">
+          <label class="block text-sm font-medium text-gray-700 mb-1">字段名称 *</label>
+          <input type="text" name="field-name[]" required 
+                value="${fieldData ? escapeHtml(fieldData.name) : ''}"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg form-focus">
+        </div>
+        
+        <div class="w-full sm:w-auto sm:flex-grow sm:min-w-[150px]">
+          <label class="block text-sm font-medium text-gray-700 mb-1">字段类型 *</label>
+          <select name="field-type[]" required 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg form-focus">
+            <option value="text" ${fieldData && fieldData.type === 'text' ? 'selected' : ''}>文本</option>
+            <option value="number" ${fieldData && fieldData.type === 'number' ? 'selected' : ''}>数字</option>
+            <option value="date" ${fieldData && fieldData.type === 'date' ? 'selected' : ''}>日期</option>
+            <option value="select" ${fieldData && fieldData.type === 'select' ? 'selected' : ''}>下拉选择</option>
+            <option value="checkbox" ${fieldData && fieldData.type === 'checkbox' ? 'selected' : ''}>复选框</option>
+          </select>
+        </div>
+        
+        <div class="field-options w-full ${fieldData && fieldData.type === 'select' ? '' : 'hidden'}">
+          <label class="block text-sm font-medium text-gray-700 mb-1">选项 (每行一个)</label>
+          <textarea name="field-options[]" rows="2" 
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg form-focus"
+                    placeholder="选项1&#10;选项2&#10;选项3">${optionsHtml}</textarea>
+        </div>
+        
+        <div class="flex items-center self-start">
+          <button type="button" class="remove-field-btn text-red-500 hover:text-red-700 p-2 transition-colors">
+            <i class="fa fa-trash"></i>
+          </button>
+        </div>
+      `;
+      
+      container.appendChild(fieldItem);
+      
+      if (!skipSetup) {
+        setupFieldTypeChangeListeners();
+      }
+    }
+    
+    // 设置字段类型切换事件监听
+    function setupFieldTypeChangeListeners() {
+      document.querySelectorAll('select[name="field-type[]"]').forEach(select => {
+        select.addEventListener('change', function() {
+          const fieldItem = this.closest('.custom-field-item');
+          const optionsContainer = fieldItem.querySelector('.field-options');
+          
+          if (this.value === 'select') {
+            optionsContainer.classList.remove('hidden');
+          } else {
+            optionsContainer.classList.add('hidden');
+          }
+        });
+      });
+    }
+    
+    // 保存自定义字段
+    function saveCustomFields() {
+      const fieldNames = document.querySelectorAll('input[name="field-name[]"]');
+      const fieldTypes = document.querySelectorAll('select[name="field-type[]"]');
+      const fieldOptions = document.querySelectorAll('textarea[name="field-options[]"]');
+      
+      const newFields = [];
+      
+      // 验证并收集字段数据
+      for (let i = 0; i < fieldNames.length; i++) {
+        const name = fieldNames[i].value.trim();
+        const type = fieldTypes[i].value;
+        
+        if (!name) {
+          showNotification('字段名称不能为空', 'error');
+          return;
+        }
+        
+        // 检查名称是否重复
+        if (newFields.some(f => f.name === name)) {
+          showNotification(`字段名称 "${name}" 已存在`, 'error');
+          return;
+        }
+        
+        // 检查是否使用了保留字段名
+        if (['id', 'name', 'date', 'amount'].includes(name.toLowerCase())) {
+          showNotification(`字段名称 "${name}" 是系统保留名称，请使用其他名称`, 'error');
+          return;
+        }
+        
+        const fieldData = { name, type };
+        
+        // 处理选项
+        if (type === 'select') {
+          const optionsText = fieldOptions[i].value.trim();
+          if (optionsText) {
+            fieldData.options = optionsText.split('\n').map(opt => opt.trim()).filter(opt => opt);
+          } else {
+            showNotification('下拉选择类型的字段必须设置选项', 'error');
+            return;
+          }
+        }
+        
+        newFields.push(fieldData);
+      }
+      
+      // 更新自定义字段
+      customFields = newFields;
+      
+      // 保存到本地存储
+      saveToLocalStorage();
+      
+      // 隐藏模态框
+      hideCustomFieldsModal();
+      
+      // 刷新表格
+      renderRecordsTable();
+      
+      // 显示成功消息
+      showNotification('字段设置已保存', 'success');
+    }
+    
+    // 隐藏自定义字段模态框
+    function hideCustomFieldsModal() {
+      document.getElementById('custom-fields-modal').classList.add('hidden');
+    }
+    
+    // 更新动态筛选条件
+    function updateDynamicFilters() {
+      const container = document.getElementById('dynamic-filters-container');
+      container.innerHTML = '';
+      
+      customFields.forEach(field => {
+        const filterGroup = document.createElement('div');
+        filterGroup.className = 'filter-group';
+        filterGroup.setAttribute('data-field', field.name);
+        
+        let filterHtml = `
+          <label class="block text-sm font-medium text-gray-700 mb-1">${field.name}</label>
+        `;
+        
+        switch(field.type) {
+          case 'text':
+          case 'number':
+          case 'date':
+            filterHtml += `
+              <input type="${field.type}" id="filter-${field.name}" 
+                    class="px-3 py-2 border border-gray-300 rounded-lg form-focus">
+            `;
+            break;
+          case 'select':
+            if (field.options && field.options.length) {
+              filterHtml += `<select id="filter-${field.name}" 
+                    class="px-3 py-2 border border-gray-300 rounded-lg form-focus">
+                <option value="">全部</option>
+              `;
+              
+              field.options.forEach(option => {
+                filterHtml += `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`;
+              });
+              
+              filterHtml += `</select>`;
+            }
+            break;
+          case 'checkbox':
+            filterHtml += `
+              <select id="filter-${field.name}" 
+                    class="px-3 py-2 border border-gray-300 rounded-lg form-focus">
+                <option value="">全部</option>
+                <option value="true">是</option>
+                <option value="false">否</option>
+              </select>
+            `;
+            break;
+        }
+        
+        filterGroup.innerHTML = filterHtml;
+        container.appendChild(filterGroup);
+      });
+      
+      // 恢复之前的筛选值
+      Object.keys(filters).forEach(key => {
+        const filterEl = document.getElementById(`filter-${key}`);
+        if (filterEl) {
+          filterEl.value = filters[key];
+        }
+      });
+    }
+    
+    // 应用筛选
+    function applyFilters() {
+      // 收集筛选条件
+      const newFilters = {};
+      
+      // 日期范围
+      const dateFrom = document.getElementById('filter-date-from').value;
+      const dateTo = document.getElementById('filter-date-to').value;
+      
+      if (dateFrom) newFilters.dateFrom = dateFrom;
+      if (dateTo) newFilters.dateTo = dateTo;
+      
+      // 自定义字段筛选
+      customFields.forEach(field => {
+        const filterEl = document.getElementById(`filter-${field.name}`);
+        if (filterEl && filterEl.value) {
+          newFilters[field.name] = filterEl.value;
+        }
+      });
+      
+      filters = newFilters;
+      currentPage = 1; // 重置到第一页
+      
+      // 重新渲染表格
+      renderRecordsTable();
+    }
+    
+    // 重置筛选
+    function resetFilters() {
+      // 清除日期筛选
+      document.getElementById('filter-date-from').value = '';
+      document.getElementById('filter-date-to').value = '';
+      
+      // 清除自定义字段筛选
+      customFields.forEach(field => {
+        const filterEl = document.getElementById(`filter-${field.name}`);
+        if (filterEl) filterEl.value = '';
+      });
+      
+      // 清除全局搜索
+      document.getElementById('global-search').value = '';
+      
+      filters = {};
+      currentPage = 1; // 重置到第一页
+      
+      // 重新渲染表格
+      renderRecordsTable();
+    }
+    
+    // 应用筛选到记录
+    function applyFiltersToRecords() {
+      let filtered = [...records];
+      
+      // 应用日期范围筛选
+      if (filters.dateFrom) {
+        filtered = filtered.filter(record => record.date >= filters.dateFrom);
+      }
+      
+      if (filters.dateTo) {
+        filtered = filtered.filter(record => record.date <= filters.dateTo);
+      }
+      
+      // 应用自定义字段筛选
+      Object.keys(filters).forEach(key => {
+        if (key === 'dateFrom' || key === 'dateTo') return;
+        
+        const filterValue = filters[key];
+        filtered = filtered.filter(record => {
+          const recordValue = record[key] !== undefined ? record[key].toString() : '';
+          return recordValue === filterValue;
+        });
+      });
+      
+      // 应用全局搜索
+      const searchTerm = document.getElementById('global-search').value.toLowerCase();
+      if (searchTerm) {
+        filtered = filtered.filter(record => {
+          // 搜索所有字段
+          return Object.values(record).some(value => {
+            if (value === null || value === undefined) return false;
+            return value.toString().toLowerCase().includes(searchTerm);
+          });
+        });
+      }
+      
+      return filtered;
+    }
+    
+    // 搜索筛选记录
+    function filterRecords(searchTerm) {
+      currentPage = 1; // 重置到第一页
+      renderRecordsTable();
+    }
+    
+    // 更新分页信息
+    function updatePaginationInfo(totalRecords, totalPages) {
+      // 更新记录计数
+      document.getElementById('total-records').textContent = totalRecords;
+      
+      // 计算显示范围
+      const start = totalRecords > 0 ? (currentPage - 1) * recordsPerPage + 1 : 0;
+      const end = Math.min(currentPage * recordsPerPage, totalRecords);
+      document.getElementById('showing-range').textContent = start > 0 ? `${start}-${end}` : '0-0';
+      
+      // 更新当前页码
+      document.getElementById('current-page').textContent = currentPage;
+      
+      // 更新分页按钮状态
+      const prevBtn = document.getElementById('prev-page');
+      const nextBtn = document.getElementById('next-page');
+      
+      prevBtn.disabled = currentPage <= 1;
+      nextBtn.disabled = currentPage >= totalPages;
+    }
+    
+    // 上一页
+    function goToPreviousPage() {
+      if (currentPage > 1) {
+        currentPage--;
+        renderRecordsTable();
+      }
+    }
+    
+    // 下一页
+    function goToNextPage() {
+      const filteredRecords = applyFiltersToRecords();
+      const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
+      
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderRecordsTable();
+      }
+    }
+    
+    // 保存到本地存储
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem('businessRecords', JSON.stringify(records));
+        localStorage.setItem('customFields', JSON.stringify(customFields));
+      } catch (e) {
+        console.error('无法保存到本地存储:', e);
+        showNotification('数据保存失败，请检查浏览器存储设置', 'error');
+      }
+    }
+    
+    // 从本地存储加载
+    function loadFromLocalStorage() {
+      try {
+        const savedRecords = localStorage.getItem('businessRecords');
+        const savedFields = localStorage.getItem('customFields');
+        
+        if (savedRecords) {
+          records = JSON.parse(savedRecords);
+        }
+        
+        if (savedFields) {
+          customFields = JSON.parse(savedFields);
+        }
+      } catch (e) {
+        console.error('无法从本地存储加载:', e);
+        // 使用默认数据
+        records = [
+          { id: 1, name: '张三', date: '2023-05-15', amount: 120.50 },
+          { id: 2, name: '李四', date: '2023-05-16', amount: 85.00 }
+        ];
+        customFields = [];
+      }
+    }
+    
+    // 显示通知
+    function showNotification(message, type = 'info') {
+      // 检查是否已有通知
+      let notification = document.querySelector('.notification');
+      
+      if (!notification) {
+        // 创建通知元素
+        notification = document.createElement('div');
+        notification.className = 'notification fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-y-20 opacity-0';
+        document.body.appendChild(notification);
+      }
+      
+      // 设置通知类型样式
+      notification.className = 'notification fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-y-20 opacity-0';
+      
+      if (type === 'success') {
+        notification.classList.add('bg-green-500', 'text-white');
+        notification.innerHTML = `<i class="fa fa-check-circle mr-2"></i>${message}`;
+      } else if (type === 'error') {
+        notification.classList.add('bg-red-500', 'text-white');
+        notification.innerHTML = `<i class="fa fa-exclamation-circle mr-2"></i>${message}`;
+      } else {
+        notification.classList.add('bg-blue-500', 'text-white');
+        notification.innerHTML = `<i class="fa fa-info-circle mr-2"></i>${message}`;
+      }
+      
+      // 显示通知
+      setTimeout(() => {
+        notification.classList.remove('translate-y-20', 'opacity-0');
+      }, 10);
+      
+      // 3秒后隐藏通知
+      setTimeout(() => {
+        notification.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+    
+    // 切换主题
+    function toggleTheme() {
+      const body = document.body;
+      const themeIcon = document.getElementById('theme-toggle').querySelector('i');
+      
+      if (body.classList.contains('dark-mode')) {
+        // 切换到亮色模式
+        body.classList.remove('dark-mode');
+        themeIcon.classList.remove('fa-sun-o');
+        themeIcon.classList.add('fa-moon-o');
+        localStorage.setItem('theme', 'light');
+      } else {
+        // 切换到暗色模式
+        body.classList.add('dark-mode');
+        themeIcon.classList.remove('fa-moon-o');
+        themeIcon.classList.add('fa-sun-o');
+        localStorage.setItem('theme', 'dark');
+      }
+    }
+    
+    // HTML转义函数，防止XSS攻击
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
